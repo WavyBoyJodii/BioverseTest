@@ -24,7 +24,7 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
     await clearAuthCookie();
     toast('Logging out User');
     setTimeout(() => {
-      router.refresh();
+      router.push('/');
     }, 2000);
   };
 
