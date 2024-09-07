@@ -16,3 +16,25 @@ export const loginSchema = z.object({
 });
 
 export type ZLoginSchema = z.infer<typeof loginSchema>;
+
+export enum QTypes {
+  mcq = 'mcq',
+  input = 'input',
+}
+
+export type QuestionSchema = {
+  type: QTypes;
+  options?: string[];
+  question: string;
+};
+
+export type Question = {
+  id: number;
+  question: QuestionSchema;
+};
+
+export interface Questionnaire {
+  id: number;
+  title: string;
+  questions: Question[];
+}
