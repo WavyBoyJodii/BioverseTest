@@ -4,14 +4,11 @@ export interface User {
   id: number;
   username: string;
   password: string;
-  isAdmin: boolean;
+  is_admin: boolean;
 }
 
 export const loginSchema = z.object({
-  username: z
-    .string()
-    .min(3, 'Must Be atleast 3 characters long')
-    .toLowerCase(),
+  username: z.string().min(3, 'Must Be atleast 3 characters long'),
   password: z.string().min(7, 'Password must be atleast 7 characters long'),
 });
 
