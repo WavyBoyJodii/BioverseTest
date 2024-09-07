@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ZLoginSchema, loginSchema } from '@/types';
@@ -11,8 +12,19 @@ import { useRouter } from 'next/navigation';
 import setUserId from '@/lib/setUserId';
 import setAuth from '@/lib/setAuth';
 import { toast } from 'sonner';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
+
+const loginCombinations = [
+  { username: 'adminUser', password: 'adminPass', admin: true },
+  { username: 'user1', password: 'password1', admin: false },
+  { username: 'user2', password: 'password2', admin: false },
+  { username: 'user3', password: 'password3', admin: false },
+  { username: 'user4', password: 'password4', admin: false },
+];
 
 export default function LandingPage() {
+  const [isRevealed, setIsRevealed] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -83,6 +95,38 @@ export default function LandingPage() {
               Log In
             </Button>
           </form>
+        </div>
+        <div className="mt-4 bg-gray-200 rounded-lg overflow-hidden">
+          <Button
+            onClick={() => setIsRevealed(!isRevealed)}
+            className="w-full py-2 px-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold flex items-center justify-center"
+          >
+            {isRevealed ? (
+              <>
+                <EyeOffIcon className="w-5 h-5 mr-2" />
+                Hide Logins
+              </>
+            ) : (
+              <>
+                <EyeIcon className="w-5 h-5 mr-2" />
+                Reveal Logins
+              </>
+            )}
+          </Button>
+          {isRevealed ? (
+            <div
+              className={`p-4 space-y-2 max-h-96 transition-all duration-300 ease-in-out overflow-hidden`}
+            >
+              {loginCombinations.map((login, index) => (
+                <p key={index} className="text-sm">
+                  Username: {login.username}, Password: {login.password}{' '}
+                  {login.admin ? '(Admin)' : ''}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <></>
+          )}
         </div>
       </div>
       <div className="mt-8 text-sm text-green-800 text-center">
