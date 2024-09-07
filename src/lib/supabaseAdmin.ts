@@ -3,17 +3,20 @@ import { User, Questionnaire } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
 import { Database } from '@/types_db';
+import getUserId from './getUserId';
 
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+const supabaseUrl = 'https://wvjwkrmeduqejllfqwms.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
 
-const getUserById = async (id: string): Promise<User> => {
+const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+
+const getUserById = async (): Promise<User> => {
+  const userId = await getUserId();
+
   const { data, error } = await supabase
     .from('user')
     .select('username, is_admin')
-    .eq('id', id)
+    .eq('id', userId)
     .single();
 
   if (error) {
@@ -24,7 +27,8 @@ const getUserById = async (id: string): Promise<User> => {
 };
 
 const getUsers = async (): Promise<User[]> => {
-  const { data, error } = await supabase.from('user').select('*');
+  const { data, error } = await supabase.from('user').select('*').order('id');
+  console.log(`data returned from supabase ${JSON.stringify(data)}`);
 
   if (error) {
     console.log(error.message);
