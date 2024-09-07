@@ -36,7 +36,7 @@ const getUsers = async (): Promise<User[]> => {
 const getQuestionnaireById = async (id: string): Promise<Questionnaire> => {
   const { data, error } = await supabase
     .from('questionnaire_junction')
-    .select('*, questionnaire_questions(*), questionnaire_questionnaires(*)')
+    .select('*, questionnaire_questions(*), questionnaire_questionnaires(name)')
     .eq('questionnaire_id', id)
     .order('priority', { ascending: false });
 
@@ -47,4 +47,61 @@ const getQuestionnaireById = async (id: string): Promise<Questionnaire> => {
   return (data as any) || [];
 };
 
-export { getUserById, getUsers, getQuestionnaireById };
+async function getQuestionnaires(): Promise<Questionnaire[] | null> {
+  // First, join the necessary tables and gather the questionnaires, questions, and responses
+  const { data, error } = await supabase
+    .from('questionnaire_junction')
+    .select(
+      `
+      questionnaire_id,
+      question_id,
+      priority,
+      questionnaire_questionnaires(name),
+      questionnaire_questions(question),
+      user_responses(response, user_id)
+    `
+    )
+    .order('questionnaire_id', { ascending: true }); // Order by questionnaire_id
+
+  if (error) {
+    console.error('Error fetching questionnaires:', error);
+    return null;
+  }
+
+  return (data as any) || [];
+}
+
+async function getQuestionnairesByUserId(
+  userID: string
+): Promise<Questionnaire[] | null> {
+  // First, join the necessary tables and gather the questionnaires, questions, and responses
+  const { data, error } = await supabase
+    .from('questionnaire_junction')
+    .select(
+      `
+      questionnaire_id,
+      question_id,
+      priority,
+      questionnaire_questionnaires(name),
+      questionnaire_questions(question),
+      user_responses(response)
+    `
+    )
+    .eq('user_responses.user_id', userID) // Filter based on the userID
+    .order('questionnaire_id', { ascending: true }); // Order by questionnaire_id
+
+  if (error) {
+    console.error('Error fetching questionnaires:', error);
+    return null;
+  }
+
+  return (data as any) || [];
+}
+
+export {
+  getUserById,
+  getUsers,
+  getQuestionnaireById,
+  getQuestionnaires,
+  getQuestionnairesByUserId,
+};
