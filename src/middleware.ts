@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import getAuth from './lib/getAuth';
 
 export const config = {
-  matcher: ['/choices', 'questionnaire/:slug*', '/admin'],
+  matcher: ['/choices', '/questionnaire/:slug*', '/admin'],
 };
 
 export default async function middleware(req: NextRequest) {
