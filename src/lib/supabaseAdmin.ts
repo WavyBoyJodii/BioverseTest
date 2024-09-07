@@ -9,6 +9,20 @@ const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
+const getUserById = async (id: string): Promise<User> => {
+  const { data, error } = await supabase
+    .from('user')
+    .select('username, is_admin')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.log(error.message);
+  }
+
+  return (data as any) || [];
+};
+
 const getUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase.from('user').select('*');
 
@@ -33,4 +47,4 @@ const getQuestionnaireById = async (id: string): Promise<Questionnaire> => {
   return (data as any) || [];
 };
 
-export { getUsers, getQuestionnaireById };
+export { getUserById, getUsers, getQuestionnaireById };
