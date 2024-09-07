@@ -36,7 +36,7 @@ const getUsers = async (): Promise<User[]> => {
 const getQuestionnaireById = async (id: string): Promise<Questionnaire> => {
   const { data, error } = await supabase
     .from('questionnaire_junction')
-    .select('*, questionnaire_questions(*)')
+    .select('*, questionnaire_questions(*), questionnaire_questionnaires(*)')
     .eq('questionnaire_id', id)
     .order('priority', { ascending: false });
 
