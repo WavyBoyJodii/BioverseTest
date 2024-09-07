@@ -2,7 +2,8 @@ import { getUsers } from './supabaseAdmin';
 
 export const handleLogin = async (username: string, password: string) => {
   const users = await getUsers();
-  // Check if user exists
+  // Check if user exists{{
+  console.log(`logging users fetched from supabase ${JSON.stringify(users)}`);
   const user = users.find((user) => user.username === username);
   if (!user) {
     return { error: true, reason: 'No such user exists' };
