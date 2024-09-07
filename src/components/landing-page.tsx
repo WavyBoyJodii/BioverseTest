@@ -43,7 +43,11 @@ export default function LandingPage() {
       await setAuth();
       toast(`${data.username} has been logged in`);
       setTimeout(() => {
-        router.push('/choices');
+        if (response.user.is_admin) {
+          router.push('/admin');
+        } else {
+          router.push('/choices');
+        }
       }, 2000);
     } else {
       toast(`${response.reason}`);
