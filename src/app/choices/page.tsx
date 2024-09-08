@@ -1,3 +1,5 @@
+'use server';
+
 import QuestionnaireChoice from '@/components/questionnaire-choice';
 import { getUserById } from '@/lib/supabaseAdmin';
 
