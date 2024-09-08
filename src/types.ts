@@ -12,6 +12,8 @@ export const loginSchema = z.object({
   password: z.string().min(7, 'Password must be atleast 7 characters long'),
 });
 
+export const PostUserResponseSchema = z.object({});
+
 export type ZLoginSchema = z.infer<typeof loginSchema>;
 
 export enum QTypes {
@@ -19,10 +21,16 @@ export enum QTypes {
   input = 'input',
 }
 
+export type ResponseSchema = {
+  user_id: number;
+  response: string[];
+};
+
 export type QuestionSchema = {
   type: QTypes;
   options?: string[];
   question: string;
+  response: ResponseSchema[];
 };
 
 export type Question = {
@@ -31,7 +39,19 @@ export type Question = {
 };
 
 export interface Questionnaire {
-  id: number;
-  title: string;
-  questions: Question[];
+  name: string;
 }
+
+export interface QuestionnaireReturn {
+  id: number;
+  priority: number;
+  question_id: number;
+  questionnaire_id: number;
+  questionnaire_questions: Question;
+  questionnaire_questionnaires: Questionnaire;
+  user_response: ResponseSchema[];
+}
+
+export type QuestionnaireFormData = {
+  [key: string]: string | string[];
+};
