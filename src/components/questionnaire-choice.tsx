@@ -1,26 +1,53 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { User } from '@/types';
+import { CheckQuestionnaire, User } from '@/types';
 import { useRouter } from 'next/navigation';
 import Header from './Header';
+import { getQuestionnairesByUserId } from '@/lib/supabaseAdmin';
+import { CheckCircle } from 'lucide-react';
 
 interface QuestionnaireChoiceProps {
   user: User;
 }
 
 const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
-  const questionnaires = [
-    { id: 1, title: 'Semaglutide' },
-    { id: 2, title: 'NAD Injection' },
-    { id: 3, title: 'Metformin' },
-  ];
+  // const questionnaires = [
+  //   { id: 1, title: 'Semaglutide' },
+  //   { id: 2, title: 'NAD Injection' },
+  //   { id: 3, title: 'Metformin' },
+  // ];
+  const [questionnaires, setQuestionnaires] = useState<CheckQuestionnaire[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchQuestionnaires = async () => {
+      try {
+        setIsLoading(true);
+        const data = await getQuestionnairesByUserId(user.id);
+        if (data) setQuestionnaires(data);
+      } catch (error) {
+        console.error('Error fetching questionnaires:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuestionnaires();
+  }, [user.id]);
 
   const handleQuestionnaireClick = (id: number) => {
     router.push(`/questionnaire/${id}`);
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex flex-col">
@@ -37,13 +64,25 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
                 key={q.id}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => handleQuestionnaireClick(q.id)}
               >
-                <Card className="h-full cursor-pointer hover:shadow-lg transition-shadow duration-300">
+                <Card
+                  className={`h-full cursor-pointer transition-shadow duration-300 ${
+                    q.isCompleted ? 'bg-gray-200' : 'hover:shadow-lg'
+                  }`}
+                  onClick={() =>
+                    !q.isCompleted && handleQuestionnaireClick(q.id)
+                  }
+                >
                   <CardContent className="flex items-center justify-center h-full p-6">
                     <h3 className="text-xl font-semibold text-center text-green-700">
                       {q.id}. {q.title}
                     </h3>
+                    {q.isCompleted && (
+                      <CheckCircle
+                        className="absolute top-2 right-2 text-green-500"
+                        size={24}
+                      />
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
