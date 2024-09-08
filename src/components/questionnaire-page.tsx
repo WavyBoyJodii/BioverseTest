@@ -17,6 +17,7 @@ import Header from './Header';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import Footer from './Footer';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 interface QuestionnairePageProps {
   questionnaireId: string;
@@ -130,7 +131,16 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
   };
 
   if (questionnaireData.length === 0) {
-    return <div>Loading...</div>;
+    // Loading state with react-spinners
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex flex-col">
+        <Header user={user} />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <ClipLoader color="#4f46e5" size={50} /> {/* Loading spinner */}
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   const questionnaireName =

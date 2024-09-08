@@ -9,6 +9,7 @@ import Header from './Header';
 import { getQuestionnairesByUserId } from '@/lib/supabaseAdmin';
 import { CheckCircle } from 'lucide-react';
 import Footer from './Footer';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 interface QuestionnaireChoiceProps {
   user: User;
@@ -45,8 +46,17 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
   const allCompleted =
     questionnaires.length > 0 && questionnaires.every((q) => q.isCompleted);
 
+  // Loading state with react-spinners
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex flex-col">
+        <Header user={user} />
+        <main className="flex-grow flex items-center justify-center p-4">
+          <ClipLoader color="#4f46e5" size={50} /> {/* Loading spinner */}
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   return (

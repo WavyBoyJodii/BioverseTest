@@ -22,6 +22,7 @@ import { getUsersWithResponses } from '@/lib/supabaseAdmin';
 import Header from './Header';
 import { User, UserWithCompletions } from '@/types';
 import Footer from './Footer';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 interface AdminPanelProps {
   user: User;
@@ -69,7 +70,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users &&
+              {/* If users is null, display the loading spinner */}
+              {!users ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center">
+                    <ClipLoader color="#4f46e5" size={50} />
+                  </TableCell>
+                </TableRow>
+              ) : (
                 users.map((user, index) => (
                   <TableRow key={user.id}>
                     <TableCell>{user.username}</TableCell>
@@ -113,7 +121,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
                       </Dialog>
                     </TableCell>
                   </TableRow>
-                ))}
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
