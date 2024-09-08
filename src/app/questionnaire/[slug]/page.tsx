@@ -1,7 +1,7 @@
+'use server';
+
 import QuestionnairePage from '@/components/questionnaire-page';
 import { getUserById } from '@/lib/supabaseAdmin';
-
-export const revalidate = 0;
 
 export default async function Questionnaire({
   params,
