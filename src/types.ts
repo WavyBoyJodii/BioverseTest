@@ -8,7 +8,10 @@ export interface User {
 }
 
 export const loginSchema = z.object({
-  username: z.string().min(3, 'Must Be atleast 3 characters long'),
+  username: z
+    .string()
+    .min(3, 'Must Be atleast 3 characters long')
+    .toLowerCase(),
   password: z.string().min(4, 'Password must be atleast 4 characters long'),
 });
 
