@@ -41,13 +41,11 @@ export default function LandingPage() {
       await setUserId(response.user?.id);
       await setAuth();
       toast(`${data.username} has been logged in`);
-      setTimeout(() => {
-        if (response.user.is_admin) {
-          router.push('/admin');
-        } else {
-          router.push('/choices');
-        }
-      }, 2000);
+      if (response.user.is_admin) {
+        router.push('/admin');
+      } else {
+        router.push('/choices');
+      }
     } else {
       toast(`${response.reason}`);
     }
