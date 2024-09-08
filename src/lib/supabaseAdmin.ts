@@ -5,6 +5,8 @@ import {
   QTypes,
   QuestionSchema,
   CheckQuestionnaire,
+  UserWithCompletions,
+  QuestionnaireResponse,
 } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
@@ -12,7 +14,7 @@ import { Database } from '@/types_db';
 import getUserId from './getUserId';
 
 const supabaseUrl = 'https://wvjwkrmeduqejllfqwms.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
@@ -41,6 +43,86 @@ const getUsers = async (): Promise<User[]> => {
   }
 
   return (data as any) || [];
+};
+
+const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
+  const { data, error } = await supabase
+    .from('user')
+    .select(
+      'id, username, is_admin, user_response(response, questionnaire_junction(questionnaire_questionnaires(*), questionnaire_questions(question) ))'
+    )
+    .eq('is_admin', 'FALSE')
+    .order('id');
+  console.log(`data returned from supabase before transformation`);
+  console.dir(data, { depth: null });
+
+  if (error) {
+    console.log(error.message);
+  }
+
+  // Transform the returned data into UserWithCompletions type
+  const transformedData: UserWithCompletions[] = (data || []).map(
+    (user: any) => {
+      // Create a map to group questions by `questionnaireName`
+      const questionnaireMap: {
+        [key: string]: { question: string; answer: string[] }[];
+      } = {};
+
+      user.user_response.forEach((responseItem: any) => {
+        const questionnaireName =
+          responseItem.questionnaire_junction.questionnaire_questionnaires.name;
+        const questionData =
+          responseItem.questionnaire_junction.questionnaire_questions.question;
+
+        // Parse the question if it's a JSON string
+        const parsedQuestion = JSON.parse(questionData);
+        const questionText = parsedQuestion.question;
+
+        // Check if the questionnaire already exists in the map
+        if (!questionnaireMap[questionnaireName]) {
+          questionnaireMap[questionnaireName] = [];
+        }
+
+        // Find if the question already exists in the map, and if so, append the answer
+        const existingQuestion = questionnaireMap[questionnaireName].find(
+          (q) => q.question === questionText
+        );
+
+        if (existingQuestion) {
+          // If the question already exists, append the answer to the array
+          existingQuestion.answer.push(...responseItem.response);
+        } else {
+          // Otherwise, add a new entry for this question with its answer(s)
+          questionnaireMap[questionnaireName].push({
+            question: questionText,
+            answer: responseItem.response,
+          });
+        }
+      });
+
+      // Convert the map into an array of QuestionnaireResponse objects
+      const responses: QuestionnaireResponse[] = Object.keys(
+        questionnaireMap
+      ).map((key) => ({
+        questionnaireName: key,
+        questions: questionnaireMap[key],
+      }));
+
+      // Count the number of completed questionnaires (those with at least one response)
+      const completedQuestionnaires = responses.length;
+
+      return {
+        id: user.id as number, // User ID
+        username: user.username as string, // Username
+        completedQuestionnaires, // Number of completed questionnaires
+        responses, // Array of questionnaire responses
+      };
+    }
+  );
+  console.log(`data returned from supabase after transformation`);
+  console.dir(transformedData, { depth: null });
+  console.log(JSON.stringify(transformedData));
+  return transformedData;
 };
 
 const getQuestionnaireById = async (
@@ -247,6 +329,7 @@ const postUserResponse = async (
 export {
   getUserById,
   getUsers,
+  getUsersWithResponses,
   getQuestionnaireById,
   getQuestionnaires,
   getQuestionnairesByUserId,
