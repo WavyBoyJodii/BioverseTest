@@ -36,7 +36,9 @@ const createQuestionnaireSchema = (
       schemaShape[`question_${q.id}`] = z
         .string()
         .min(1, 'This field is required')
-        .trim();
+        .refine((value) => value.trim().length > 0, {
+          message: 'Input cannot contain only whitespace',
+        });
     } else if (q.question.type === QTypes.mcq) {
       if (multipleSelectionQuestionIds.includes(q.id)) {
         schemaShape[`question_${q.id}`] = z
