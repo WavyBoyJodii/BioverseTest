@@ -9,10 +9,8 @@ export interface User {
 
 export const loginSchema = z.object({
   username: z.string().min(3, 'Must Be atleast 3 characters long'),
-  password: z.string().min(7, 'Password must be atleast 7 characters long'),
+  password: z.string().min(4, 'Password must be atleast 4 characters long'),
 });
-
-export const PostUserResponseSchema = z.object({});
 
 export type ZLoginSchema = z.infer<typeof loginSchema>;
 

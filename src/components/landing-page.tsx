@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 const loginCombinations = [
-  { username: 'adminUser', password: 'adminPass', admin: true },
+  { username: 'admin', password: 'admin1', admin: true },
   { username: 'user1', password: 'password1', admin: false },
   { username: 'user2', password: 'password2', admin: false },
   { username: 'user3', password: 'password3', admin: false },
@@ -36,7 +36,6 @@ export default function LandingPage() {
   const router = useRouter();
 
   const onSubmit = async (data: ZLoginSchema) => {
-    console.log('attempting login with:', data);
     const response = await handleLogin(data.username, data.password);
     if (response.success) {
       await setUserId(response.user?.id);
@@ -134,7 +133,7 @@ export default function LandingPage() {
         </div>
       </div>
       <div className="mt-8 text-sm text-green-800 text-center">
-        © 2023 Bioverse. All rights reserved.
+        © 2024 Bioverse. All rights reserved.
       </div>
     </div>
   );

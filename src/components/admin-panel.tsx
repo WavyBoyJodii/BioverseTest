@@ -21,93 +21,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { getUsersWithResponses } from '@/lib/supabaseAdmin';
 import Header from './Header';
 import { User, UserWithCompletions } from '@/types';
-
-// interface UserWithCompletions {
-//   id: number;
-//   username: string;
-//   completedQuestionnaires: number;
-// }
-
-// interface QuestionnaireResponse {
-//   questionnaireName: string;
-//   questions: { question: string; answer: string }[];
-// }
-
-// interface UserResponses {
-//   username: string;
-//   responses: QuestionnaireResponse[];
-// }
-
-// // Mock data for users
-// const users: UserWithCompletions[] = [
-//   { id: 1, username: 'user1', completedQuestionnaires: 2 },
-//   { id: 2, username: 'user2', completedQuestionnaires: 1 },
-//   { id: 3, username: 'user3', completedQuestionnaires: 3 },
-// ];
-
-// // Mock data for user responses
-// const userResponses: { [key: number]: UserResponses } = {
-//   1: {
-//     username: 'user1',
-//     responses: [
-//       {
-//         questionnaireName: 'Semaglutide',
-//         questions: [
-//           { question: 'Have you used Semaglutide before?', answer: 'No' },
-//           { question: 'What is your current weight?', answer: '70 kg' },
-//         ],
-//       },
-//       {
-//         questionnaireName: 'Metformin',
-//         questions: [
-//           { question: 'Are you diabetic?', answer: 'No' },
-//           { question: 'Do you have any kidney issues?', answer: 'No' },
-//         ],
-//       },
-//     ],
-//   },
-//   2: {
-//     username: 'user2',
-//     responses: [
-//       {
-//         questionnaireName: 'NAD Injection',
-//         questions: [
-//           { question: 'Have you had NAD injections before?', answer: 'Yes' },
-//           {
-//             question: 'Did you experience any side effects?',
-//             answer: 'Mild headache',
-//           },
-//         ],
-//       },
-//     ],
-//   },
-//   3: {
-//     username: 'user3',
-//     responses: [
-//       {
-//         questionnaireName: 'Semaglutide',
-//         questions: [
-//           { question: 'Have you used Semaglutide before?', answer: 'Yes' },
-//           { question: 'What is your current weight?', answer: '85 kg' },
-//         ],
-//       },
-//       {
-//         questionnaireName: 'NAD Injection',
-//         questions: [
-//           { question: 'Have you had NAD injections before?', answer: 'No' },
-//           { question: 'Do you have any allergies?', answer: 'None' },
-//         ],
-//       },
-//       {
-//         questionnaireName: 'Metformin',
-//         questions: [
-//           { question: 'Are you diabetic?', answer: 'Yes' },
-//           { question: 'Do you have any kidney issues?', answer: 'No' },
-//         ],
-//       },
-//     ],
-//   },
-// };
+import Footer from './Footer';
 
 interface AdminPanelProps {
   user: User;
@@ -205,9 +119,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ user }) => {
         </div>
       </main>
 
-      <footer className="mt-auto py-4 text-center text-sm text-green-800">
-        © 2023 Bioverse. All rights reserved.
-      </footer>
+      <Footer />
     </div>
   );
 };

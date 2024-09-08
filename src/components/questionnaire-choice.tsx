@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import Header from './Header';
 import { getQuestionnairesByUserId } from '@/lib/supabaseAdmin';
 import { CheckCircle } from 'lucide-react';
+import Footer from './Footer';
 
 interface QuestionnaireChoiceProps {
   user: User;
@@ -93,9 +94,7 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
         </div>
       </main>
 
-      <footer className="mt-auto py-4 text-center text-sm text-green-800">
-        © 2023 Bioverse. All rights reserved.
-      </footer>
+      <Footer />
     </div>
   );
 };

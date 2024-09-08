@@ -16,10 +16,8 @@ const Header: React.FC<HeaderProps> = ({ user }) => {
 
   const handleLogout = async () => {
     await clearAuthCookie();
-    toast('Logging out User');
-    setTimeout(() => {
-      router.push('/');
-    }, 2000);
+    toast(`${user.username} has been logged out`);
+    router.push('/');
   };
 
   return (

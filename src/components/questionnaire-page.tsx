@@ -16,6 +16,7 @@ import { getQuestionnaireById, postUserResponse } from '@/lib/supabaseAdmin';
 import Header from './Header';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import Footer from './Footer';
 
 interface QuestionnairePageProps {
   questionnaireId: string;
@@ -78,9 +79,7 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
   });
 
   useEffect(() => {
-    // Simulating data fetching
     const fetchQuestionnaire = async () => {
-      // Replace this with actual data fetching logic
       const questionnaireData = await getQuestionnaireById(questionnaireId);
 
       setQuestionnaireData(questionnaireData);
@@ -110,8 +109,6 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
   }, [questionnaireId, reset, user]);
 
   const onSubmit = async (data: any) => {
-    console.log('Submitted responses:', data);
-    // Here you would typically send the responses to your backend
     try {
       for (const item of questionnaireData) {
         const questionId = item.questionnaire_questions.id;
@@ -265,9 +262,7 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
         </div>
       </main>
 
-      <footer className="mt-auto py-4 text-center text-sm text-green-800">
-        © 2023 Bioverse. All rights reserved.
-      </footer>
+      <Footer />
     </div>
   );
 };
