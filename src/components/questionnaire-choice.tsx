@@ -15,11 +15,6 @@ interface QuestionnaireChoiceProps {
 }
 
 const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
-  // const questionnaires = [
-  //   { id: 1, title: 'Semaglutide' },
-  //   { id: 2, title: 'NAD Injection' },
-  //   { id: 3, title: 'Metformin' },
-  // ];
   const [questionnaires, setQuestionnaires] = useState<CheckQuestionnaire[]>(
     []
   );
@@ -45,6 +40,10 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
   const handleQuestionnaireClick = (id: number) => {
     router.push(`/questionnaire/${id}`);
   };
+
+  // Check if all questionnaires are completed
+  const allCompleted =
+    questionnaires.length > 0 && questionnaires.every((q) => q.isCompleted);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -91,6 +90,12 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
               </motion.div>
             ))}
           </div>
+          {/* Display message if all questionnaires are completed */}
+          {allCompleted && (
+            <div className="text-center text-green-800 font-semibold mt-4">
+              All Questionnaires completed!
+            </div>
+          )}
         </div>
       </main>
 
