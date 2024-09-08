@@ -36,7 +36,6 @@ const getUserById = async (): Promise<User> => {
 
 const getUsers = async (): Promise<User[]> => {
   const { data, error } = await supabase.from('user').select('*').order('id');
-  console.log(`data returned from supabase ${JSON.stringify(data)}`);
 
   if (error) {
     console.log(error.message);
@@ -53,8 +52,6 @@ const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
     )
     .eq('is_admin', 'FALSE')
     .order('id');
-  console.log(`data returned from supabase before transformation`);
-  console.dir(data, { depth: null });
 
   if (error) {
     console.log(error.message);
@@ -119,9 +116,6 @@ const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
       };
     }
   );
-  console.log(`data returned from supabase after transformation`);
-  console.dir(transformedData, { depth: null });
-  console.log(JSON.stringify(transformedData));
   return transformedData;
 };
 
@@ -135,10 +129,6 @@ const getQuestionnaireById = async (
     )
     .eq('questionnaire_id', id)
     .order('priority', { ascending: false });
-
-  console.log(
-    `logging getQuestionnaireById data return ${JSON.stringify(data)}`
-  );
 
   if (error) {
     console.log(error.message);
@@ -180,7 +170,6 @@ const getQuestionnaireById = async (
       };
     }
   );
-  console.dir(transformedData, { depth: null });
 
   return transformedData;
 };
@@ -235,7 +224,6 @@ async function getQuestionnaires(): Promise<QuestionnaireReturn[] | null> {
       };
     }
   );
-  console.dir(transformedData, { depth: null });
 
   return transformedData;
 }
@@ -306,7 +294,7 @@ async function getQuestionnairesByUserId(
         ),
     })
   );
-  console.dir(questionnaires);
+
   return questionnaires;
 }
 
