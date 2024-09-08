@@ -61,3 +61,15 @@ export interface CheckQuestionnaire {
   title: string;
   isCompleted: boolean;
 }
+
+export interface QuestionnaireResponse {
+  questionnaireName: string;
+  questions: { question: string; answer: string[] }[];
+}
+
+export interface UserWithCompletions {
+  id: number;
+  username: string;
+  completedQuestionnaires: number;
+  responses: QuestionnaireResponse[];
+}
