@@ -18,7 +18,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { UserCircle, LogOut } from 'lucide-react';
 import { getUsersWithResponses } from '@/lib/supabaseAdmin';
 import Header from './Header';
 import { User, UserWithCompletions } from '@/types';
