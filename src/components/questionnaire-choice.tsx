@@ -62,18 +62,20 @@ const QuestionnaireChoice: React.FC<QuestionnaireChoiceProps> = ({ user }) => {
             {questionnaires.map((q) => (
               <motion.div
                 key={q.id}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={!q.isCompleted ? { scale: 1.05 } : {}}
+                whileTap={!q.isCompleted ? { scale: 0.95 } : {}}
               >
                 <Card
-                  className={`h-full cursor-pointer transition-shadow duration-300 ${
-                    q.isCompleted ? 'bg-gray-200' : 'hover:shadow-lg'
+                  className={`h-full transition-shadow duration-300 ${
+                    q.isCompleted
+                      ? 'bg-gray-200 cursor-default'
+                      : 'hover:shadow-lg cursor-pointer'
                   }`}
                   onClick={() =>
                     !q.isCompleted && handleQuestionnaireClick(q.id)
                   }
                 >
-                  <CardContent className="flex items-center justify-center h-full p-6">
+                  <CardContent className="relative flex items-center justify-center h-full p-6">
                     <h3 className="text-xl font-semibold text-center text-green-700">
                       {q.id}. {q.title}
                     </h3>
