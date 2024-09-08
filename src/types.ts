@@ -55,3 +55,9 @@ export interface QuestionnaireReturn {
 export type QuestionnaireFormData = {
   [key: string]: string | string[];
 };
+
+export interface CheckQuestionnaire {
+  id: number;
+  title: string;
+  isCompleted: boolean;
+}
