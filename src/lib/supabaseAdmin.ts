@@ -7,7 +7,6 @@ import {
   CheckQuestionnaire,
   UserWithCompletions,
   QuestionnaireResponse,
-  ResponseSchema,
 } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
@@ -233,72 +232,86 @@ const getQuestionnaireById = async (
   id: string,
   userId: number
 ): Promise<QuestionnaireReturn[]> => {
-  // Fetch the questionnaire data
-  const { data: questionnaireData, error: questionnaireError } = await supabase
-    .from('questionnaire_junction')
-    .select('*, questionnaire_questions(*), questionnaire_questionnaires(name)')
-    .eq('questionnaire_id', id)
-    .order('priority', { ascending: false });
+  try {
+    // Fetch the questionnaire data
+    const { data: questionnaireData, error: questionnaireError } =
+      await supabase
+        .from('questionnaire_junction')
+        .select(
+          '*, questionnaire_questions(*), questionnaire_questionnaires(name)'
+        )
+        .eq('questionnaire_id', id)
+        .order('priority', { ascending: false });
 
-  if (questionnaireError) {
-    console.log(questionnaireError.message);
-    return [];
-  }
+    if (questionnaireError) throw questionnaireError;
 
-  // Fetch all user responses for this user
-  const { data: userResponseData, error: userResponseError } = await supabase
-    .from('user_response')
-    .select('questionnaire_junction_id, response')
-    .eq('user_id', userId);
+    // Fetch all user responses for this user
+    const { data: allUserResponses, error: responsesError } = await supabase
+      .from('user_response')
+      .select('questionnaire_junction_id, response')
+      .eq('user_id', userId);
 
-  if (userResponseError) {
-    console.log(userResponseError.message);
-    return [];
-  }
+    if (responsesError) throw responsesError;
 
-  // Create a map of question_id to response for quick lookup
-  const userResponseMap = new Map<number, string[]>();
-  userResponseData.forEach((response) => {
-    userResponseMap.set(response.questionnaire_junction_id, response.response);
-  });
+    // Create a map of question_id to response
+    const questionResponseMap = new Map();
+    for (const response of allUserResponses) {
+      const { data: junctionData } = await supabase
+        .from('questionnaire_junction')
+        .select('question_id')
+        .eq('id', response.questionnaire_junction_id)
+        .single();
 
-  // Transform the data
-  const transformedData: QuestionnaireReturn[] = (questionnaireData || []).map(
-    (item: any) => {
-      const questionData: QuestionSchema = JSON.parse(
-        item.questionnaire_questions.question
-      );
-
-      const userResponse: ResponseSchema[] = [
-        {
-          user_id: userId,
-          response: userResponseMap.get(item.id) || [],
-        },
-      ];
-
-      return {
-        id: item.id as number,
-        priority: item.priority as number,
-        question_id: item.question_id as number,
-        questionnaire_id: item.questionnaire_id as number,
-        questionnaire_questions: {
-          id: item.questionnaire_questions.id as number,
-          question: {
-            type: questionData.type as QTypes,
-            options: questionData.options || [],
-            question: questionData.question as string,
-            response: userResponse, // Include the response here
-          },
-        },
-        questionnaire_questionnaires: {
-          name: item.questionnaire_questionnaires.name as string,
-        },
-        user_response: userResponse,
-      };
+      if (junctionData) {
+        questionResponseMap.set(junctionData.question_id, response.response);
+      }
     }
-  );
 
-  return transformedData;
+    // Transform the data
+    const transformedData: QuestionnaireReturn[] = questionnaireData.map(
+      (item: any) => {
+        const questionData: QuestionSchema = JSON.parse(
+          item.questionnaire_questions.question
+        );
+        const response = questionResponseMap.get(item.question_id) || [];
+
+        return {
+          id: item.id,
+          priority: item.priority,
+          question_id: item.question_id,
+          questionnaire_id: item.questionnaire_id,
+          questionnaire_questions: {
+            id: item.questionnaire_questions.id,
+            question: {
+              type: questionData.type as QTypes,
+              options: questionData.options || [],
+              question: questionData.question,
+              response: [
+                {
+                  user_id: userId,
+                  response: response,
+                },
+              ],
+            },
+          },
+          questionnaire_questionnaires: {
+            name: item.questionnaire_questionnaires.name,
+          },
+          user_response: [
+            {
+              user_id: userId,
+              response: response,
+            },
+          ],
+        };
+      }
+    );
+
+    return transformedData;
+  } catch (error) {
+    console.error('Error in getQuestionnaireById:', error);
+    throw error;
+  }
 };
 
 async function getQuestionnaires(): Promise<QuestionnaireReturn[] | null> {
@@ -422,48 +435,19 @@ const postUserResponse = async (
   response: string[]
 ) => {
   try {
-    // First, get the question_id for this junction
-    const { data: junctionData, error: junctionError } = await supabase
-      .from('questionnaire_junction')
-      .select('question_id')
-      .eq('id', junctionId)
-      .single();
-
-    if (junctionError) throw junctionError;
-
-    const questionId = junctionData?.question_id;
-
-    if (questionId === null || questionId === undefined) {
-      throw new Error(`No question_id found for junction_id: ${junctionId}`);
-    }
-
-    // Then, get all junction_ids for this question_id
-    const { data: allJunctions, error: junctionsError } = await supabase
-      .from('questionnaire_junction')
-      .select('id')
-      .eq('question_id', questionId);
-
-    if (junctionsError) throw junctionsError;
-
-    // Now, insert or update responses for all related junctions
-    const responsesToUpsert = allJunctions.map((junction) => ({
-      user_id: userId,
-      questionnaire_junction_id: junction.id,
-      response: response,
-    }));
-
-    const { error: upsertError } = await supabase
-      .from('user_response')
-      .upsert(responsesToUpsert, {
-        onConflict: 'user_id,questionnaire_junction_id',
-        ignoreDuplicates: false,
-      });
+    // Insert or update the response for the specific junction
+    const { error: upsertError } = await supabase.from('user_response').upsert(
+      {
+        user_id: userId,
+        questionnaire_junction_id: junctionId,
+        response: response,
+      },
+      { onConflict: 'user_id,questionnaire_junction_id' }
+    );
 
     if (upsertError) throw upsertError;
 
-    console.log(
-      `User response submitted for question ID ${questionId} across all related questionnaires`
-    );
+    console.log(`User response submitted for junction ID ${junctionId}`);
   } catch (error) {
     console.error('Error in postUserResponse:', error);
     throw error;
