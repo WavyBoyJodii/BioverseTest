@@ -112,8 +112,8 @@ export const getUserByIdNew = async (): Promise<UserWithCompletions> => {
   const userQuestionnaires: CheckQuestionnaire[] | null =
     await getQuestionnairesByUserId(userId);
 
-  // Fixing completedQuestionnaires count and `isCompleted` for each questionnaire
-  let completedQuestionnaires = 0;
+  // placeholder for completed questionnaires, not needed for this functions purpose
+  const completedQuestionnaires = 0;
 
   // Return a consolidated UserWithCompletions object
   return {
