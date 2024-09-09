@@ -26,7 +26,6 @@ interface QuestionnairePageProps {
 // IDs of questions that allow multiple selections
 const multipleSelectionQuestionIds = [1, 4];
 
-// Zod schema for form validation
 const createQuestionnaireSchema = (
   questionnaireData: QuestionnaireReturn[]
 ) => {
@@ -81,12 +80,16 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
 
   useEffect(() => {
     const fetchQuestionnaire = async () => {
-      const questionnaireData = await getQuestionnaireById(questionnaireId);
+      const questionnaireData = await getQuestionnaireById(
+        questionnaireId,
+        user.id
+      );
 
       setQuestionnaireData(questionnaireData);
       const zodQuestionnaireSchema =
         createQuestionnaireSchema(questionnaireData);
       setFormSchema(zodQuestionnaireSchema);
+
       const defaultValues = questionnaireData.reduce((acc, item) => {
         const userResponse = item.user_response.find(
           (response) => response.user_id === user.id
@@ -103,11 +106,11 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
         return acc;
       }, {} as z.infer<typeof formSchema>);
 
-      reset(defaultValues); // Reset form with default values
+      reset(defaultValues);
     };
 
     fetchQuestionnaire();
-  }, [questionnaireId, reset, user]);
+  }, [questionnaireId, reset, user.id]);
 
   const onSubmit = async (data: any) => {
     try {
@@ -121,7 +124,7 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
         );
       }
       console.log('All responses submitted successfully');
-      toast(`${user.username} has succesfully submitted their responses`);
+      toast(`${user.username} has successfully submitted their responses`);
       setTimeout(() => {
         router.push('/choices');
       }, 2000);
@@ -131,12 +134,11 @@ const QuestionnairePage: React.FC<QuestionnairePageProps> = ({
   };
 
   if (questionnaireData.length === 0) {
-    // Loading state with react-spinners
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 flex flex-col">
         <Header user={user} />
         <main className="flex-grow flex items-center justify-center p-4">
-          <ClipLoader color="#4f46e5" size={50} /> {/* Loading spinner */}
+          <ClipLoader color="#4f46e5" size={50} />
         </main>
         <Footer />
       </div>
