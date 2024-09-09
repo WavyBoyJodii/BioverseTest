@@ -12,21 +12,21 @@ export type Database = {
       questionnaire_junction: {
         Row: {
           id: number;
-          priority: number | null;
-          question_id: number | null;
-          questionnaire_id: number | null;
+          priority: number;
+          question_id: number;
+          questionnaire_id: number;
         };
         Insert: {
           id: number;
-          priority?: number | null;
-          question_id?: number | null;
-          questionnaire_id?: number | null;
+          priority: number;
+          question_id: number;
+          questionnaire_id: number;
         };
         Update: {
           id?: number;
-          priority?: number | null;
-          question_id?: number | null;
-          questionnaire_id?: number | null;
+          priority?: number;
+          question_id?: number;
+          questionnaire_id?: number;
         };
         Relationships: [
           {
@@ -48,15 +48,15 @@ export type Database = {
       questionnaire_questionnaires: {
         Row: {
           id: number;
-          name: string | null;
+          name: string;
         };
         Insert: {
           id: number;
-          name?: string | null;
+          name: string;
         };
         Update: {
           id?: number;
-          name?: string | null;
+          name?: string;
         };
         Relationships: [];
       };
