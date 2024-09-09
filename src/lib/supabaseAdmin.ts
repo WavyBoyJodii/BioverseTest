@@ -13,22 +13,11 @@ import { createClient } from '@supabase/supabase-js';
 
 import { Database } from '@/types_db';
 import getUserId from './getUserId';
-import isValidQuestion from './isValidQuestion';
 
 const supabaseUrl = 'https://wvjwkrmeduqejllfqwms.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
-
-interface QuestionnaireMapItem {
-  id: number;
-  title: string;
-  questions: any[]; // You might want to replace 'any' with a more specific type
-}
-
-interface QuestionnaireMap {
-  [key: number]: QuestionnaireMapItem;
-}
 
 const getUserById = async (): Promise<User> => {
   const userId = await getUserId();
