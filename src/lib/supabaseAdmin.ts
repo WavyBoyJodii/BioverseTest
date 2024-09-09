@@ -7,16 +7,28 @@ import {
   CheckQuestionnaire,
   UserWithCompletions,
   QuestionnaireResponse,
+  ResponseSchema,
 } from '@/types';
 import { createClient } from '@supabase/supabase-js';
 
 import { Database } from '@/types_db';
 import getUserId from './getUserId';
+import isValidQuestion from './isValidQuestion';
 
 const supabaseUrl = 'https://wvjwkrmeduqejllfqwms.supabase.co';
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 const supabase = createClient<Database>(supabaseUrl, supabaseKey);
+
+interface QuestionnaireMapItem {
+  id: number;
+  title: string;
+  questions: any[]; // You might want to replace 'any' with a more specific type
+}
+
+interface QuestionnaireMap {
+  [key: number]: QuestionnaireMapItem;
+}
 
 const getUserById = async (): Promise<User> => {
   const userId = await getUserId();
@@ -147,7 +159,7 @@ export const getUserByIdNew = async (): Promise<UserWithCompletions> => {
     is_admin: userData.is_admin,
     completedQuestionnaires, // Number of completed questionnaires
     responses, // List of questionnaire responses
-    questionnaires: questionnairesWithCompletionStatus, // List of questionnaires with their completion status
+    questionnaires: userQuestionnaires!, // List of questionnaires with their completion status
   };
 };
 
@@ -222,20 +234,22 @@ const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
         questions: questionnaireMap[key],
       }));
 
-      // Count the number of completed questionnaires (those with at least one response)
-      const completedQuestionnaires = responses.length;
+      // Count the number of completed questionnaires (those with exactly 3 answered questions)
+      const completedQuestionnaires = responses.filter(
+        (response) => response.questions.length === 3
+      ).length;
 
       // Fetch the user's questionnaires and determine completion status
-      const questionnaires: CheckQuestionnaire[] = user.user_response.map(
-        (responseItem: any) => ({
-          id: responseItem.questionnaire_junction.questionnaire_questionnaires
-            .id,
-          title:
-            responseItem.questionnaire_junction.questionnaire_questionnaires
-              .name,
-          isCompleted: responseItem.response.length > 0, // Mark as completed if there is a response
-        })
-      );
+      const questionnaires: CheckQuestionnaire[] = Object.entries(
+        questionnaireMap
+      ).map(([name, questions]) => ({
+        id: user.user_response.find(
+          (r: any) =>
+            r.questionnaire_junction.questionnaire_questionnaires.name === name
+        )?.questionnaire_junction.questionnaire_questionnaires.id,
+        title: name,
+        isCompleted: questions.length === 3, // Mark as completed if there are exactly 3 questions answered
+      }));
 
       return {
         id: user.id as number, // User ID
@@ -252,53 +266,70 @@ const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
 };
 
 const getQuestionnaireById = async (
-  id: string
+  id: string,
+  userId: number
 ): Promise<QuestionnaireReturn[]> => {
-  const { data, error } = await supabase
+  // Fetch the questionnaire data
+  const { data: questionnaireData, error: questionnaireError } = await supabase
     .from('questionnaire_junction')
-    .select(
-      '*, questionnaire_questions(*), questionnaire_questionnaires(name), user_response(user_id, response)'
-    )
+    .select('*, questionnaire_questions(*), questionnaire_questionnaires(name)')
     .eq('questionnaire_id', id)
     .order('priority', { ascending: false });
 
-  if (error) {
-    console.log(error.message);
+  if (questionnaireError) {
+    console.log(questionnaireError.message);
+    return [];
   }
 
-  // Ensure we properly transform the jsonb data into our TypeScript types
-  const transformedData: QuestionnaireReturn[] = (data || []).map(
+  // Fetch all user responses for this user
+  const { data: userResponseData, error: userResponseError } = await supabase
+    .from('user_response')
+    .select('questionnaire_junction_id, response')
+    .eq('user_id', userId);
+
+  if (userResponseError) {
+    console.log(userResponseError.message);
+    return [];
+  }
+
+  // Create a map of question_id to response for quick lookup
+  const userResponseMap = new Map<number, string[]>();
+  userResponseData.forEach((response) => {
+    userResponseMap.set(response.questionnaire_junction_id, response.response);
+  });
+
+  // Transform the data
+  const transformedData: QuestionnaireReturn[] = (questionnaireData || []).map(
     (item: any) => {
       const questionData: QuestionSchema = JSON.parse(
         item.questionnaire_questions.question
       );
 
+      const userResponse: ResponseSchema[] = [
+        {
+          user_id: userId,
+          response: userResponseMap.get(item.id) || [],
+        },
+      ];
+
       return {
-        id: item.id as number, // Cast to number
-        priority: item.priority as number, // Cast to number
-        question_id: item.question_id as number, // Cast to number
-        questionnaire_id: item.questionnaire_id as number, // Cast to number
+        id: item.id as number,
+        priority: item.priority as number,
+        question_id: item.question_id as number,
+        questionnaire_id: item.questionnaire_id as number,
         questionnaire_questions: {
-          id: item.questionnaire_questions.id as number, // Cast to number
+          id: item.questionnaire_questions.id as number,
           question: {
-            type: questionData.type as QTypes, // Cast to your QTypes enum
-            options: questionData.options || [], // Cast options to array (string[])
-            question: questionData.question as string, // Cast to string
-            response:
-              item.user_response?.map((response: any) => ({
-                user_id: response.user_id as number, // Cast to number
-                response: response.response as string[], // Cast to string array
-              })) || [], // Ensure an empty array if no responses
+            type: questionData.type as QTypes,
+            options: questionData.options || [],
+            question: questionData.question as string,
+            response: userResponse, // Include the response here
           },
         },
         questionnaire_questionnaires: {
-          name: item.questionnaire_questionnaires.name as string, // Cast to string
+          name: item.questionnaire_questionnaires.name as string,
         },
-        user_response:
-          item.user_response?.map((response: any) => ({
-            user_id: response.user_id as number, // Cast to number
-            response: response.response as string[], // Cast to string array
-          })) || [], // Ensure an empty array if no responses
+        user_response: userResponse,
       };
     }
   );
@@ -363,71 +394,62 @@ async function getQuestionnaires(): Promise<QuestionnaireReturn[] | null> {
 async function getQuestionnairesByUserId(
   userId: number
 ): Promise<CheckQuestionnaire[] | null> {
-  // First, join the necessary tables and gather the questionnaires, questions, and responses
-  const { data, error } = await supabase
-    .from('questionnaire_junction')
-    .select(
-      '*, questionnaire_questions(*), questionnaire_questionnaires(name), user_response(user_id, response)'
-    )
-    .eq('user_response.user_id', userId) // Filter based on the userID
-    .in('id', [1, 4, 7]) // Filter by specific IDs to return only 3 unique questionnaires
-    .order('questionnaire_id', { ascending: true }); // Order by questionnaire_id
+  try {
+    // Fetch all questionnaires
+    const { data: questionnaires, error: questionnairesError } = await supabase
+      .from('questionnaire_questionnaires')
+      .select('id, name')
+      .order('id');
 
-  if (error) {
-    console.error('Error fetching questionnaires:', error);
+    if (questionnairesError) throw questionnairesError;
+
+    // Fetch all questions for these questionnaires
+    const { data: allQuestions, error: questionsError } = await supabase
+      .from('questionnaire_junction')
+      .select('id, questionnaire_id, question_id')
+      .order('questionnaire_id, priority');
+
+    if (questionsError) throw questionsError;
+
+    // Fetch all user responses for this user
+    const { data: userResponses, error: responsesError } = await supabase
+      .from('user_response')
+      .select('questionnaire_junction_id, response')
+      .eq('user_id', userId);
+
+    if (responsesError) throw responsesError;
+
+    // Create a set of answered question junction IDs
+    const answeredJunctionIds = new Set(
+      userResponses.map((r) => r.questionnaire_junction_id)
+    );
+
+    // Create a map of questionnaire IDs to their questions
+    const questionnaireQuestions = allQuestions.reduce((acc, q) => {
+      if (!acc[q.questionnaire_id]) {
+        acc[q.questionnaire_id] = [];
+      }
+      acc[q.questionnaire_id].push(q.id);
+      return acc;
+    }, {} as Record<number, number[]>);
+
+    // Determine if each questionnaire is completed
+    const checkQuestionnaires: CheckQuestionnaire[] = questionnaires.map(
+      (q) => ({
+        id: q.id,
+        title: q.name,
+        isCompleted:
+          questionnaireQuestions[q.id]?.every((junctionId) =>
+            answeredJunctionIds.has(junctionId)
+          ) ?? false,
+      })
+    );
+
+    return checkQuestionnaires;
+  } catch (error) {
+    console.error('Error in getQuestionnairesByUserId:', error);
     throw error;
   }
-
-  // Ensure we properly transform the jsonb data into our TypeScript types
-  const transformedData: QuestionnaireReturn[] = (data || []).map(
-    (item: any) => {
-      const questionData: QuestionSchema = JSON.parse(
-        item.questionnaire_questions.question
-      );
-
-      return {
-        id: item.id as number, // Cast to number
-        priority: item.priority as number, // Cast to number
-        question_id: item.question_id as number, // Cast to number
-        questionnaire_id: item.questionnaire_id as number, // Cast to number
-        questionnaire_questions: {
-          id: item.questionnaire_questions.id as number, // Cast to number
-          question: {
-            type: questionData.type as QTypes, // Cast to your QTypes enum
-            options: questionData.options || [], // Cast options to array (string[])
-            question: questionData.question as string, // Cast to string
-            response:
-              item.user_response?.map((response: any) => ({
-                user_id: response.user_id as number, // Cast to number
-                response: response.response as string[], // Cast to string array
-              })) || [], // Ensure an empty array if no responses
-          },
-        },
-        questionnaire_questionnaires: {
-          name: item.questionnaire_questionnaires.name as string, // Cast to string
-        },
-        user_response:
-          item.user_response?.map((response: any) => ({
-            user_id: response.user_id as number, // Cast to number
-            response: response.response as string[], // Cast to string array
-          })) || [], // Ensure an empty array if no responses
-      };
-    }
-  );
-  const questionnaires: CheckQuestionnaire[] = transformedData.map(
-    (item: QuestionnaireReturn) => ({
-      id: item.questionnaire_id,
-      title: item.questionnaire_questionnaires.name,
-      isCompleted:
-        item?.user_response?.length > 0 && // Check if user_response exists
-        item?.user_response.some(
-          (response: any) =>
-            response.user_id === userId && response.response.length > 0
-        ),
-    })
-  );
-
-  return questionnaires;
 }
 
 const postUserResponse = async (
@@ -435,15 +457,53 @@ const postUserResponse = async (
   junctionId: number,
   response: string[]
 ) => {
-  const { error: supabaseError } = await supabase.from('user_response').insert([
-    {
+  try {
+    // First, get the question_id for this junction
+    const { data: junctionData, error: junctionError } = await supabase
+      .from('questionnaire_junction')
+      .select('question_id')
+      .eq('id', junctionId)
+      .single();
+
+    if (junctionError) throw junctionError;
+
+    const questionId = junctionData?.question_id;
+
+    if (questionId === null || questionId === undefined) {
+      throw new Error(`No question_id found for junction_id: ${junctionId}`);
+    }
+
+    // Then, get all junction_ids for this question_id
+    const { data: allJunctions, error: junctionsError } = await supabase
+      .from('questionnaire_junction')
+      .select('id')
+      .eq('question_id', questionId);
+
+    if (junctionsError) throw junctionsError;
+
+    // Now, insert or update responses for all related junctions
+    const responsesToUpsert = allJunctions.map((junction) => ({
       user_id: userId,
-      questionnaire_junction_id: junctionId,
+      questionnaire_junction_id: junction.id,
       response: response,
-    },
-  ]);
-  if (supabaseError) throw supabaseError;
-  console.log(`user response submitted junction id ${junctionId}`);
+    }));
+
+    const { error: upsertError } = await supabase
+      .from('user_response')
+      .upsert(responsesToUpsert, {
+        onConflict: 'user_id,questionnaire_junction_id',
+        ignoreDuplicates: false,
+      });
+
+    if (upsertError) throw upsertError;
+
+    console.log(
+      `User response submitted for question ID ${questionId} across all related questionnaires`
+    );
+  } catch (error) {
+    console.error('Error in postUserResponse:', error);
+    throw error;
+  }
 };
 
 export {
