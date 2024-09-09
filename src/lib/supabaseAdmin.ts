@@ -115,31 +115,6 @@ export const getUserByIdNew = async (): Promise<UserWithCompletions> => {
   // Fixing completedQuestionnaires count and `isCompleted` for each questionnaire
   let completedQuestionnaires = 0;
 
-  // We need to cross-check responses with questionnaires
-  const questionnairesWithCompletionStatus =
-    userQuestionnaires?.map((questionnaire) => {
-      const hasResponses = responses.some(
-        (response) => response.questionnaireName === questionnaire.title
-      );
-
-      const isCompleted =
-        hasResponses &&
-        responses
-          .find(
-            (response) => response.questionnaireName === questionnaire.title
-          )
-          ?.questions.every((q) => q.answer.length > 0); // Mark as completed if all answers have content
-
-      if (isCompleted) {
-        completedQuestionnaires++; // Increment the count of completed questionnaires
-      }
-
-      return {
-        ...questionnaire,
-        isCompleted: isCompleted || false, // Ensure isCompleted is set properly
-      };
-    }) || [];
-
   // Return a consolidated UserWithCompletions object
   return {
     id: userData.id,
