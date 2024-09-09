@@ -71,6 +71,9 @@ export interface QuestionnaireResponse {
 export interface UserWithCompletions {
   id: number;
   username: string;
+  password: string;
+  is_admin: boolean;
   completedQuestionnaires: number;
   responses: QuestionnaireResponse[];
+  questionnaires: CheckQuestionnaire[];
 }
