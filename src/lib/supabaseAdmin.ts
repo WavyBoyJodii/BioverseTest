@@ -23,7 +23,7 @@ const getUserById = async (): Promise<User> => {
 
   const { data, error } = await supabase
     .from('user')
-    .select('id, username, is_admin')
+    .select('*')
     .eq('id', userId)
     .single();
 
@@ -32,6 +32,123 @@ const getUserById = async (): Promise<User> => {
   }
 
   return (data as any) || [];
+};
+
+export const getUserByIdNew = async (): Promise<UserWithCompletions> => {
+  const userId = await getUserId();
+
+  // Fetch user data
+  const { data, error } = await supabase
+    .from('user')
+    .select(
+      '*, user_response(response, questionnaire_junction(questionnaire_questionnaires(*), questionnaire_questions(question) ))'
+    )
+    .eq('id', userId)
+    .single(); // Fetch a single user by ID
+
+  if (error || !data) {
+    console.error('Error fetching user:', error);
+    // Return null if there's an error fetching user
+  }
+
+  const userData = data as {
+    id: number;
+    username: string;
+    password: string;
+    is_admin: boolean;
+    user_response?: any[];
+  };
+
+  // Create a map to group questions by `questionnaireName`
+  const questionnaireMap: {
+    [key: string]: { question: string; answer: string[] }[];
+  } = {};
+
+  // Process the user responses and group them by questionnaire (only if user_response exists)
+  if (userData.user_response && userData.user_response.length > 0) {
+    userData.user_response.forEach((responseItem: any) => {
+      const questionnaireName =
+        responseItem.questionnaire_junction.questionnaire_questionnaires.name;
+      const questionData =
+        responseItem.questionnaire_junction.questionnaire_questions.question;
+
+      // Parse the question if it's a JSON string
+      const parsedQuestion = JSON.parse(questionData);
+      const questionText = parsedQuestion.question;
+
+      // Check if the questionnaire already exists in the map
+      if (!questionnaireMap[questionnaireName]) {
+        questionnaireMap[questionnaireName] = [];
+      }
+
+      // Find if the question already exists in the map, and if so, append the answer
+      const existingQuestion = questionnaireMap[questionnaireName].find(
+        (q) => q.question === questionText
+      );
+
+      if (existingQuestion) {
+        // If the question already exists, append the answer to the array
+        existingQuestion.answer.push(...responseItem.response);
+      } else {
+        // Otherwise, add a new entry for this question with its answer(s)
+        questionnaireMap[questionnaireName].push({
+          question: questionText,
+          answer: responseItem.response,
+        });
+      }
+    });
+  }
+
+  // Convert the map into an array of QuestionnaireResponse objects
+  const responses: QuestionnaireResponse[] = Object.keys(questionnaireMap).map(
+    (key) => ({
+      questionnaireName: key,
+      questions: questionnaireMap[key],
+    })
+  );
+
+  // Fetch user questionnaires and their completion status
+  const userQuestionnaires: CheckQuestionnaire[] | null =
+    await getQuestionnairesByUserId(userId);
+
+  // Fixing completedQuestionnaires count and `isCompleted` for each questionnaire
+  let completedQuestionnaires = 0;
+
+  // We need to cross-check responses with questionnaires
+  const questionnairesWithCompletionStatus =
+    userQuestionnaires?.map((questionnaire) => {
+      const hasResponses = responses.some(
+        (response) => response.questionnaireName === questionnaire.title
+      );
+
+      const isCompleted =
+        hasResponses &&
+        responses
+          .find(
+            (response) => response.questionnaireName === questionnaire.title
+          )
+          ?.questions.every((q) => q.answer.length > 0); // Mark as completed if all answers have content
+
+      if (isCompleted) {
+        completedQuestionnaires++; // Increment the count of completed questionnaires
+      }
+
+      return {
+        ...questionnaire,
+        isCompleted: isCompleted || false, // Ensure isCompleted is set properly
+      };
+    }) || [];
+
+  // Return a consolidated UserWithCompletions object
+  return {
+    id: userData.id,
+    username: userData.username,
+    password: userData.password, // Password (use cautiously on client-side)
+    is_admin: userData.is_admin,
+    completedQuestionnaires, // Number of completed questionnaires
+    responses, // List of questionnaire responses
+    questionnaires: questionnairesWithCompletionStatus, // List of questionnaires with their completion status
+  };
 };
 
 const getUsers = async (): Promise<User[]> => {
@@ -48,7 +165,7 @@ const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
   const { data, error } = await supabase
     .from('user')
     .select(
-      'id, username, is_admin, user_response(response, questionnaire_junction(questionnaire_questionnaires(*), questionnaire_questions(question) ))'
+      '*, user_response(response, questionnaire_junction(questionnaire_questionnaires(*), questionnaire_questions(question) ))'
     )
     .eq('is_admin', 'FALSE')
     .order('id');
@@ -108,11 +225,26 @@ const getUsersWithResponses = async (): Promise<UserWithCompletions[]> => {
       // Count the number of completed questionnaires (those with at least one response)
       const completedQuestionnaires = responses.length;
 
+      // Fetch the user's questionnaires and determine completion status
+      const questionnaires: CheckQuestionnaire[] = user.user_response.map(
+        (responseItem: any) => ({
+          id: responseItem.questionnaire_junction.questionnaire_questionnaires
+            .id,
+          title:
+            responseItem.questionnaire_junction.questionnaire_questionnaires
+              .name,
+          isCompleted: responseItem.response.length > 0, // Mark as completed if there is a response
+        })
+      );
+
       return {
         id: user.id as number, // User ID
         username: user.username as string, // Username
+        password: user.password as string,
+        is_admin: user.is_admin as boolean,
         completedQuestionnaires, // Number of completed questionnaires
         responses, // Array of questionnaire responses
+        questionnaires,
       };
     }
   );
